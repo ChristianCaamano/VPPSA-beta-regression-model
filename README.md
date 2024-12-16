@@ -1,2 +1,2 @@
-# Christian-Caamano-Carrillo
-Semiparametric additive beta regression model with varying precision parameter
+# Semiparametric additive beta regression model with varying precision parameter
+The objective of this paper  consists of proposing a semiparametric functional structure in the mean and the precision parameter assuming greater flexibility in the model, such that the precision or variance parameter of the response variable can vary depending on the predictor variables and at the same time take into account the heteroscedasticity present in the data.  Additionally, the weighted standardized residuals for the residual analysis of the model are presented and e diagnostic analysis of the model is addressed, for which the local influence method is presented under different perturbation schemes.
