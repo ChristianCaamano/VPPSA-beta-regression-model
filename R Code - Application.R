@@ -11,14 +11,16 @@ rm(list = ls())
 ###############################################################################
 ###                Caschool (Test score data in California)                 ###
 ###############################################################################
-
 library(pracma)
 library(MASS)
 library("betareg")
 library(gamlss)
+library(caret)
 
+setwd("C:/Users/chcaa/OneDrive/Escritorio/Papers/Beta Semiparametric/Aplicación")
 source("Model_semip_beta_fixed.R")
 source("Model_semip_beta_varying.R")
+source("GCV.R")
 
 Caschool <- read.csv("dataset.csv",header=T,sep = ",",dec = "." )
 head(Caschool)
@@ -57,25 +59,34 @@ plot(calwpct,Y,ylab = "y",main = "d)")
 
 model_1 <- betareg(Y ~ readscr + avginc + mealpct + calwpct)
 summary(model_1)
-AIC(model_1,k = log(418))
+AIC(model_1,k=log(418))
+### cross-validation 
+data1 <- data.frame(Y, readscr, avginc, mealpct, calwpct)
+GCV_BR(Y ~ readscr + avginc + mealpct + calwpct,p=6, data1,k=20)
+
 
 ### MODEL 2: application paper 
 
 model_2 <- betareg(Y ~ readscr + avginc | mealpct + calwpct)
-summary(model_2 )
-AIC(model_2,k = log(418))
+summary(model_2)
+AIC(model_2,k=log(418))
+GCV_BR(Y ~ readscr + avginc | mealpct + calwpct,p=6, data1,k=20)
 
 ### MODEL 3: application paper 
 
 model_3<-betareg(Y ~ readscr + I(avginc^2) | mealpct + I(calwpct^2))
 summary(model_3)
-AIC(model_3,k = log(418))
+AIC(model_3,k=log(418))
+GCV_BR(Y ~ readscr + I(avginc^2) | mealpct + I(calwpct^2),p=6,data1,k=20)
+
 
 ### MODEL 4: application paper
 
 model_4<- betareg(Y ~ readscr + avginc + I(avginc^2) | mealpct + calwpct + I(calwpct^2))
 summary(model_4)
-AIC(model_4,k = log(418))
+AIC(model_4,k=log(418))
+GCV_BR(Y ~ readscr + avginc + I(avginc^2) | mealpct + calwpct + I(calwpct^2),p=8,data1,k=20)
+
 
 ### MODEL 5: application paper
 
@@ -84,21 +95,31 @@ X <- readscr
 T1 <- avginc
 
 fit.fixed <- model.fixed(X=readscr,T1=avginc,Y=Y,lambda1=0.002)
-names(fit.fixed)
 
-fit.fixed$AIC
+
 fit.fixed$beta
 fit.fixed$SD_beta
 fit.fixed$phi
 fit.fixed$SD_phi
+fit.fixed$GCV
+fit.fixed$Like
+fit.fixed$AIC
+fit.fixed$R2_adj
 
-### MODEL 6: application paper
+
+
+### MODEL 6: application paper 
 
 model_6 <- gamlss(formula = Y ~ readscr+cs(avginc),
                   sigma.formula = ~mealpct+cs(calwpct),
                   family=BEo(mu.link = "log", sigma.link = "log"))
 summary(model_6)
-AIC(model_6)
+summary(model_6)$terms
+logLik(model_6)
+AIC(model_6,k=log(418))
+R2gamlss(model_6)
+gcvgamlss<-gcv_gamlss(data1,k = 20, p = 4, seed = 123)
+
 
 ###############################################################################
 ### PROPOSED MODEL: Semiparametric additive beta regression model           ###
@@ -113,13 +134,16 @@ t1 <- calwpct
 
 fit.varying <- model.varying(x1=readscr,z1=mealpct,T1=avginc,t1=calwpct,
                              delta1=2100,lambda1=500,tol=10^-5)
-names(fit.varying)
 
-fit.varying$AIC
 fit.varying$beta
 fit.varying$alpha
 fit.varying$SD_BETA_n
 fit.varying$SD_Alpha_n
+fit.varying$GCV
+fit.varying$Like
+fit.varying$AIC
+fit.varying$R2_adj
+
 
 ###  Figure 3 of paper  
 
@@ -278,6 +302,12 @@ plot(1:length(abs(fit.varying$zp4)), abs(fit.varying$zp4), ylim = c(0,1), cex = 
      bg="red",pch=21,xlab = "Index",ylab =expression(B[i]),main ="d)")
 abline(h=fit.varying$lzp4/130,lwd=1,col="black",lty=2)
 identify(1:length(abs(fit.varying$zp4)), abs(fit.varying$zp4), n = 1)
+
+
+
+
+
+
 
 
 
