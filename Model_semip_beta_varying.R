@@ -41,7 +41,7 @@ model.varying <- function(x1,z1,T1,t1,delta1,lambda1,tol){
       }
     }
   }
-  
+    
   #### Matrix K1
   K1 <- Q1%*%solve(R1)%*%t(Q1)
   
@@ -238,9 +238,19 @@ model.varying <- function(x1,z1,T1,t1,delta1,lambda1,tol){
   edf_delta1 <- sum(diag(NN1%*%S1_n))
   edf_lambda1 <- sum(diag(MM1%*%S1star_n))
   
+  edf_total <- p+q+edf_delta1+edf_lambda1 
   ############ Akaike information criterion AIC #############
-  AIC_del_lam <- -2*L_en + 2*(p+q+edf_delta1+edf_lambda1)
-  
+  AIC_del_lam <- -2*L_en + 2*(edf_total)
+  ############ Bayesian information criterion AIC ###########
+  BIC_del_lam <- -2*L_en +log(n)*(edf_total)
+
+  ############ Pseudo R2 ###########
+  edf_total <- p+q+edf_delta1+edf_lambda1
+  SQR1 <- sum((Y - mu_en)^2)/(n-p)
+  SQT1 <- sum((Y - mean(Y))^2)/(n-1)
+  R2 <- 1 - (SQR1/SQT1)
+  R2_adj <- 1 - ((1 - R2) * (n - 1)) / (n - edf_total)
+
   #################  Hessian  ###########################
   
   q1 <- ((fi_en^2)*trigamma(mu_en*fi_en)+(fi_en^2)*trigamma((1-mu_en)*fi_en)-y_1*((1-2*mu_en)/(mu_en-mu_en^2)))*((1/(g_mu1))^2) # signo -
@@ -287,7 +297,7 @@ model.varying <- function(x1,z1,T1,t1,delta1,lambda1,tol){
   I_22 <- t(MM1)%*%W2_in%*%MM1+lambda1*K1star
   
   I_Tetan <- rbind(cbind(I_11,I_12),cbind(I_21,I_22))
-  
+
   ### Inverse matrix
   
   F <-pinv(I_11-I_12%*%solve(I_22)%*%I_21)
@@ -311,7 +321,6 @@ model.varying <- function(x1,z1,T1,t1,delta1,lambda1,tol){
   
   SD_F1_n <- SE_tetan[(p+q+1):(p+q+r1)]
   SD_F1star_n <- SE_tetan[(p+q+r1+1):(p+q+r1+r2)]   
-  
   ################################# Residuals ###################################
   g_mu_en <- 1/(mu_en-mu_en^2)
   wi <- (fi_en)*(trigamma(mu_en*fi_en)+trigamma((1-mu_en)*fi_en))*((1/(g_mu_en))^2)
@@ -320,7 +329,10 @@ model.varying <- function(x1,z1,T1,t1,delta1,lambda1,tol){
   Hstar <- sqrt(W%*%PHI)%*%XX%*%solve(t(XX)%*%PHI%*%W%*%XX)%*%t(XX)%*%sqrt(PHI%*%W)
   
   residuals <- (log(Y/(1-Y))-digamma(mu_en*fi_en)+digamma((1-mu_en)*fi_en))/sqrt((trigamma(mu_en*fi_en)+trigamma((1-mu_en)*fi_en))*(1-diag(Hstar)))
-  
+
+  ############################### GCV  ##########################################
+  GCV <- sum((Y-mu_en)^2)/(n*(1-sum(diag(Hstar))/n)^2)
+  #GCV <- sum((Y-mu_en)^2)/(n*(1-edf_total/n)^2)
   ############################### Partial residuals #############################
   par_res1 <- residuals+N1%*%F1_en
   par_res2 <- residuals+M1%*%F1star_en
@@ -534,14 +546,23 @@ max_zp4 <- Vz4[,which(eigenvaluesz_4==max(eigenvaluesz_4))]
 lz4 <- max(max(abs(max_zp4)))
 Bz_4<- (lz4/sqrt(sum(diag(Bz4))))
 
-  
-return(list(AIC=AIC_del_lam,edf_func1=edf_delta1,edf_func2=edf_lambda1,beta=BETA_en
-              ,alpha=Alpha_en,T1_0=T1_0,F1_en=F1_en
+
+return(list(AIC=AIC_del_lam,BIC=BIC_del_lam,GCV=GCV,edf_func1=edf_delta1,Like=L_en,
+            edf_func2=edf_lambda1,beta=BETA_en,alpha=Alpha_en,T1_0=T1_0,F1_en=F1_en
               ,t1_0=t1_0,F1star_en=F1star_en,SD_BETA_n=SD_BETA_n,SD_Alpha_n=SD_Alpha_n,
-              SD_F1_n=SD_F1_n,SD_F1star_n=SD_F1star_n,residuals=residuals,
+              SD_F1_n=SD_F1_n,SD_F1star_n=SD_F1star_n,residuals=residuals,R2_adj=R2_adj,
               par_res1=par_res1,par_res2=par_res2,leverage=leverage,wp1=max_p1,
               wp2=max_p2,wp3=max_p3,wp4=max_p4,lwp1=B_1,lwp2=B_2,lwp3=B_3,lwp4=B_4,rp1=max_pr1,
               rp2=max_pr2,rp3=max_pr3,rp4=max_pr4,lrp1=Br_1,lrp2=Br_2,lrp3=Br_3,lrp4=Br_4,pp1=max_pp1,
               pp2=max_pp2,pp3=max_pp3,pp4=max_pp4,lpp1=Bp_1,lpp2=Bp_2,lpp3=Bp_3,lpp4=Bp_4,zp1=max_zp1,
               zp2=max_zp2,zp3=max_zp3,zp4=max_zp4,lzp1=Bz_1,lzp2=Bz_2,lzp3=Bz_3,lzp4=Bz_4))
 }
+
+
+    
+
+
+
+
+
+
